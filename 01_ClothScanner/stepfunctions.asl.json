@@ -28,7 +28,7 @@
         "UserID": "{% $states.input.UserID %}",
         "Date": "{% $states.input.Date %}",
         "OutfitImageKey": "{% '1_ClothScanner' & $states.input.UserID & $states.input.Date & $states.input.ImageKey %}",
-        "Prompts": "{% $states.result.Payload.body.prompts %}"
+        "Items": "{% $states.result.Payload.body.items %}"
       },
       "Next": "Map"
     },
@@ -71,7 +71,7 @@
           }
         }
       },
-      "Items": "{% $Prompts %}",
+      "Items": "{% $Items %}",
       "Next": "Pass"
     },
     "Pass": {

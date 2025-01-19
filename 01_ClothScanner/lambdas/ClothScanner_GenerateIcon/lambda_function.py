@@ -27,18 +27,22 @@ def lambda_handler(event, context):
         # 입력 텍스트 가져오기
         user_id = event['user_id']
         date = event['date']
-        fashion_description = event['prompt']
         bucket_name = event['bucket_name'] # S3 버킷 이름
+
+        prompt = event['prompt']
+        color = prompt['color']
+        category = prompt['category']
+        fashion_description = prompt['details']
         
         # 프롬프트 구성
-        prompt = f"""3D icon of {fashion_description}, Only front side. Flat color and lighting. Full shot. Center. Digital, grey background, design asset"""
+        prompt = f"""3D icon of {color} colored {category}, {fashion_description}, Only front side. Flat color and lighting. Full shot. Center. Digital, grey background, design asset"""
     
         # Titan Image Generator 페이로드
         payload = {
             "taskType": "TEXT_IMAGE",
             "textToImageParams": {
                 "text": prompt,
-                "negativeText": "human model, busy background"
+                "negativeText": "human model, busy background, multiple items"
             },
             "imageGenerationConfig": {
                 "numberOfImages": 1,
@@ -60,7 +64,7 @@ def lambda_handler(event, context):
         # base64 이미지 추출 및 S3 저장
         generated_image = response_body.get('images', [])[0]
         timestamp = str(int(time.time()))
-        image_key = f'1_ClothScanner/{user_id}/{date}/{timestamp}.png'
+        image_key = f'1_ClothScanner/{user_id}/{date}/{category}_{timestamp}.png'
         s3_key = save_to_s3(generated_image, bucket_name, image_key)
         
         return {

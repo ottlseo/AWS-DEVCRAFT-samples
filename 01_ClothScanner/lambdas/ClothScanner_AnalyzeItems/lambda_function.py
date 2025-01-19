@@ -6,17 +6,37 @@ from io import BytesIO
 def lambda_handler(event, context):
 
     system_prompt = """
-    You will be given a photo of a person's outfit. You will need to describe each item in detail.
+    You will be given a photo of a person's outfit. 
+    You will need to analyze and describe each fashion item in detail, and return as a JSON object that looks like <ExampleOutput>.
     Focus ONLY on fashion items, NOT the person and NOT the background of a photo.
     Think step by step.
 
     1. First find ALL fashion items.
     2. For each items, try to find all the <details> following. <details> Fabric, Color, Pattern, Style, Fit, Man or Women or Kids, Cut, Neckline, Sleeve Length, overall length, Closure, Details, Trim, Collar, Hem, Lining, Embellishments, Functionality, Brand Logo/Label. Gender and other things.</details> Fit is important.
-    3. Keep the total length of the <clothes description> under 355 chars.
-    4. With the <details> above write the <clothes description> for each items. Be as descriptive as explaning to a person who haven't seen this item, but so detailed that they can draw the item exactly like the real thing. Add more details if not enough.
-    5. Provide the output as a JSON object with only one key: `prompts`. The `prompts` key should contain an array of the detailed item descriptions.\nGive me only JSON with no commentary.
+    3. With the <details> above create a JSON object for each item with the following structure:
+       {
+         "color": "main color of the item",
+         "category": one of ["TOP", "BOTTOM", "SHOES", "ACCESSORY", "OTHERS"],
+         "details": "detailed description under 355 chars"
+       }
+    4. Provide the output as a JSON object with only one key: `items`. The `items` key should contain an array of the item JSON objects.
 
-    <clothes description> normal length, round neck neckline, long sleeve, normal silhouette, knit textile, plain print, casual style, light blue color, cardigan, with the word '86' written in the center. <clothes description>
+    <ExampleOutput>
+    {
+    "items": [
+        {
+        "color": "light blue",
+        "category": "TOP",
+        "details": "normal length, round neck neckline, long sleeve, normal silhouette, knit textile, plain print, casual style cardigan, with the word '86' written in the center"
+        },
+        {
+        "color": "black",
+        "category": "BOTTOM",
+        "details": "high-waisted midi skirt with A-line silhouette, made from lightweight flowy fabric, features elastic waistband, falls just below the calf, suitable for casual to semi-formal wear"
+        }
+    ]
+    }
+    </ExampleOutput>
     """
 
     # S3 클라이언트 생성
