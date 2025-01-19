@@ -64,14 +64,17 @@ def lambda_handler(event, context):
         # base64 이미지 추출 및 S3 저장
         generated_image = response_body.get('images', [])[0]
         timestamp = str(int(time.time()))
-        image_key = f'1_ClothScanner/{user_id}/{date}/{category}_{timestamp}.png'
+        image_key = f'1_ClothScanner/{user_id}/{date}/{timestamp}_{category}.png'
         s3_key = save_to_s3(generated_image, bucket_name, image_key)
         
         return {
             'statusCode': 200,
             'body': {
-                'key': s3_key,
-                'prompt': prompt
+                's3_key': s3_key,
+                "attribute": {
+                    "category": category,
+                    "color": color
+                }
             }
         }
         
