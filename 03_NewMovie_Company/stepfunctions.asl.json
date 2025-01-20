@@ -1,0 +1,85 @@
+{
+    "Comment": "A description of my state machine",
+    "StartAt": "StartTranscriptionJob",
+    "States": {
+      "StartTranscriptionJob": {
+        "Type": "Task",
+        "Arguments": {
+          "Media": {
+            "MediaFileUri": "{% 's3://' & $states.input.BucketName & '/' & $states.input.VideoKey %}"
+          },
+          "TranscriptionJobName": "{% $states.context.Execution.Name %}",
+          "LanguageCode": "en-US",
+          "OutputBucketName": "{% $states.input.BucketName %}",
+          "OutputKey": "temp.json",
+          "Settings": {
+            "VocabularyFilterMethod": "mask",
+            "VocabularyFilterName": "devcraft-ttt-scenario3-voca"
+          }
+        },
+        "Resource": "arn:aws:states:::aws-sdk:transcribe:startTranscriptionJob",
+        "Next": "Wait",
+        "Assign": {
+          "jobId": "{% $states.result.TranscriptionJob.TranscriptionJobName %}",
+          "BucketName": "{% $states.input.BucketName %}",
+          "VideoKey": "{% $states.input.VideoKey %}",
+          "TempFileKey": "temp.json",
+          "TranscriptionKey": "{% $states.input.VideoKey & '.txt' %}"
+        }
+      },
+      "Wait": {
+        "Type": "Wait",
+        "Seconds": 10,
+        "Next": "GetTranscriptionJob"
+      },
+      "GetTranscriptionJob": {
+        "Type": "Task",
+        "Arguments": {
+          "TranscriptionJobName": "{% $jobId %}"
+        },
+        "Resource": "arn:aws:states:::aws-sdk:transcribe:getTranscriptionJob",
+        "Assign": {
+          "jobStatus": "{% $states.result.TranscriptionJob.TranscriptionJobStatus %}"
+        },
+        "Next": "Choice"
+      },
+      "Choice": {
+        "Type": "Choice",
+        "Choices": [
+          {
+            "Next": "GetObject",
+            "Condition": "{% $jobStatus = 'COMPLETED' %}"
+          },
+          {
+            "Next": "Fail",
+            "Condition": "{% $jobStatus = 'FAILED' %}"
+          }
+        ],
+        "Default": "Wait"
+      },
+      "GetObject": {
+        "Type": "Task",
+        "Arguments": {
+          "Bucket": "{% $BucketName %}",
+          "Key": "{% $TempFileKey %}"
+        },
+        "Resource": "arn:aws:states:::aws-sdk:s3:getObject",
+        "Next": "PutObject",
+        "Output": "{% $parse($states.result.Body) %}"
+      },
+      "PutObject": {
+        "Type": "Task",
+        "Arguments": {
+          "Body": "{% $states.input.results.transcripts[0].transcript %}",
+          "Bucket": "{% $BucketName %}",
+          "Key": "{% $TranscriptionKey %}"
+        },
+        "Resource": "arn:aws:states:::aws-sdk:s3:putObject",
+        "End": true
+      },
+      "Fail": {
+        "Type": "Fail"
+      }
+    },
+    "QueryLanguage": "JSONata"
+  }
